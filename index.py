@@ -16,6 +16,8 @@ import torch
 
 flowers_path = './flowers'
 
+SAVE_MODEL_PATH = './cifar_net.pth'
+
 transformations = transforms.Compose([
     transforms.RandomResizedCrop(64),
     transforms.ToTensor(),
@@ -109,8 +111,11 @@ else:
 
 print(device)
 cnn_model = FlowerClassifierCNNModel().to(device)
+cnn_model.load_state_dict(torch.load(SAVE_MODEL_PATH))
 optimizer = Adam(cnn_model.parameters())
 loss_fn = nn.CrossEntropyLoss()
+cnn_model.eval()
+# print(cnn_model)
 
 
 def train_and_build(n_epoches):
@@ -128,20 +133,37 @@ def train_and_build(n_epoches):
             # print(str(i) + "train nth")
 
 
-train_and_build(200)
+# train_and_build(200)
 
-cnn_model.eval()
-test_acc_count = 0
-for k, (test_images, test_labels) in enumerate(test_dataset_loader):
-    test_images = test_images.to(device)
-    test_labels = test_labels.to(device)
-    test_outputs = cnn_model(test_images)
-    _, prediction = torch.max(test_outputs.data, 1)
-    test_acc_count += torch.sum(prediction == test_labels.data).item()
 
-test_accuracy = test_acc_count / len(test_dataset)
+def make_prediction(image_path):
+    print(image_path)
+    test_image = Image.open(image_path)
+    test_image_tensor = transformations(test_image).float().to(device)
+    test_image_tensor = test_image_tensor.unsqueeze_(0).to(device)
+    # print(test_image_tensor)
+    output = cnn_model(test_image_tensor).to(device)
+    class_index = output.data.cpu().numpy().argmax()
+    return class_index
 
-print(test_accuracy)
+
+# cnn_model.eval()
+# print(make_prediction("./flowers/dandelion/13920113_f03e867ea7_m.jpg"))
+# print(make_prediction("./flowers/dandelion-flower.jpg"))
+print(make_prediction("./flowers/daisy-flower-1532449822.jpg"))
+
+# test_acc_count = 0
+# for k, (test_images, test_labels) in enumerate(test_dataset_loader):
+#     test_images = test_images.to(device)
+#     test_labels = test_labels.to(device)
+#     test_outputs = cnn_model(test_images)
+#     _, prediction = torch.max(test_outputs.data, 1)
+#     test_acc_count += torch.sum(prediction == test_labels.data).item()
+
+# test_accuracy = test_acc_count / len(test_dataset)
+
+# print(test_accuracy)
+# torch.save(cnn_model.state_dict(), SAVE_MODEL_PATH)
 
 
 # test_image = Image.open(flowers_path+"/dandelion/13920113_f03e867ea7_m.jpg")
@@ -151,4 +173,4 @@ print(test_accuracy)
 # class_index = output.data.numpy().argmax()
 
 # print(class_index)
-# print(total_dataset.class_to_idx)
+print(total_dataset.class_to_idx)
